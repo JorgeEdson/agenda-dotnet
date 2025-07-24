@@ -21,7 +21,7 @@ namespace Agenda.Dominio.Entidades
         private void SetSenha(string senha)
         {
             if (string.IsNullOrWhiteSpace(senha) || senha.Length < 6)
-                throw new ArgumentException("Senha inválida (mínimo 6 caracteres)");
+                AdicionarNotificacao("Senha inválida (mínimo 6 caracteres)");
 
             Senha = senha;
         }
@@ -46,7 +46,7 @@ namespace Agenda.Dominio.Entidades
         public void SetNome(string nome)
         {
             if (string.IsNullOrWhiteSpace(nome))
-                throw new ArgumentException("Nome inválido");
+                AdicionarNotificacao("Nome inválido");
 
             Nome = nome.Trim();
         }
@@ -54,7 +54,7 @@ namespace Agenda.Dominio.Entidades
         public void SetEmail(string email)
         {
             if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
-                throw new ArgumentException("Email inválido");
+                AdicionarNotificacao("Email inválido");
 
             Email = email.Trim().ToLower();
         }
@@ -80,59 +80,38 @@ namespace Agenda.Dominio.Entidades
 
         public static ResultadoGenerico<Usuario> Criar(string nome, string email, string senha, long? id)
         {
-            try 
-            {
-                if (id is not null)
-                    return new ResultadoGenerico<Usuario>(
-                        true,
-                        "Usuario criado com sucesso.",
-                        new Usuario(nome, email, senha, id)
-                    );
+            Usuario usuario;
 
-                return new ResultadoGenerico<Usuario>(
-                    true,
-                    "Usuário criado com sucesso!",
-                    new Usuario(nome, email, senha, null)
-                );
+            if (id is not null)
+                usuario = new Usuario(nome, email, senha, id);
 
-            }
-            catch(Exception ex) 
-            {
-                return new ResultadoGenerico<Usuario>(
-                    false,
-                    "Falha ao criar o anúncio: " + ex.Message,
-                    null
-                );
-            }
+            usuario = new Usuario(nome, email, senha, null);
+
+            if (!usuario.Valido)            
+                return new ResultadoGenerico<Usuario>(false, "Erro: " + usuario.ObterMensagemDeErros(), null);            
+
+            return new ResultadoGenerico<Usuario>(true,"Usuário criado com sucesso", usuario);
         }
 
         public void AdicionarEndereco(Endereco endereco)
-        {
-            if (endereco == null)
-                throw new ArgumentException("Endereço inválido");
+        {   
 
-            if (endereco.IdUsuario != this.Id)
-                throw new InvalidOperationException("Endereço pertence a outro usuário");
+            if (endereco.IdUsuario != Id)
+                AdicionarNotificacao("Endereço pertence a outro usuário");
 
             _enderecos.Add(endereco);
         }
 
         public void AdicionarServico(Servico servico)
         {
-            if (servico is null)
-                throw new ArgumentException("Serviço inválido");
-
-            if (servico.IdUsuario != this.Id)
-                throw new InvalidOperationException("Serviço pertence a outro usuário");
+            if (servico.IdUsuario != Id)
+                AdicionarNotificacao("Serviço pertence a outro usuário");
 
             _servicos.Add(servico);
         }
 
         public void AdicionarAgendamento(Agendamento agendamento)
         {
-            if (agendamento == null)
-                throw new ArgumentException("Agendamento inválido");
-
             _agendamentos.Add(agendamento);
         }
 

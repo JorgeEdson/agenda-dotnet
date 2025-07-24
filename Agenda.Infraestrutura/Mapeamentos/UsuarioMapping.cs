@@ -8,11 +8,11 @@ namespace Agenda.Infraestrutura.Mapeamentos
     {
         public void Configure(EntityTypeBuilder<Usuario> builder)
         {
-            builder.HasKey(Usuario => Usuario.Id);  // Cria chave primaria
-            builder.Property(Usuario => Usuario.Id).ValueGeneratedNever();  // Não gerar Id Automático
-            builder.Property(Usuario => Usuario.Nome).IsRequired(); // Requerido
-            builder.Property(Usuario => Usuario.Email).IsRequired(); // Requerido
-            builder.Property(Usuario => Usuario.Senha).IsRequired(); // Requerido
+            builder.HasKey(Usuario => Usuario.Id);  
+            builder.Property(Usuario => Usuario.Id).ValueGeneratedNever();  
+            builder.Property(Usuario => Usuario.Nome).IsRequired(); 
+            builder.Property(Usuario => Usuario.Email).IsRequired(); 
+            builder.Property(Usuario => Usuario.Senha).IsRequired(); 
         }
     }
 }

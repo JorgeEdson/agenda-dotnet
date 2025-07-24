@@ -7,11 +7,11 @@ using UsuarioEntidade = Agenda.Dominio.Entidades.Usuario;
 namespace Agenda.Aplicacao.Comunicacao.Usuario.Commands
 {
     public class AtualizarUsuarioHandler(IUnitOfWork unitOfWork) :
-        IRequestHandler<Command<AtualizarUsuario, ResultadoGenerico<bool>>, ResultadoGenerico<bool>>
+        IRequestHandler<Command<AtualizarUsuarioCommand, ResultadoGenerico<bool>>, ResultadoGenerico<bool>>
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
-        public async Task<ResultadoGenerico<bool>> Handle(Command<AtualizarUsuario, ResultadoGenerico<bool>> request, CancellationToken cancellationToken)
+        public async Task<ResultadoGenerico<bool>> Handle(Command<AtualizarUsuarioCommand, ResultadoGenerico<bool>> request, CancellationToken cancellationToken)
         {
             try
             {
