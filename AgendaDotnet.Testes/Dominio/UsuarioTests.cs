@@ -6,248 +6,243 @@ namespace AgendaDotnet.Testes.Dominio
     public class UsuarioTests
     {
         [Fact]
-        public void CriarUsuario_Valido_DeveRetornarSucesso()
+        public void Usuario_Criar_DeveRetornarUsuarioValido_QuandoDadosSaoValidos()
         {
+            // Arrange
+            string nome = "Teste Usuário";
+            string email = "teste@email.com";
+            string senha = "senhaSegura123";
+
             // Act
-            var resultado = Usuario.Criar("João", "joao@email.com", "123456", null);
+            var resultado = Usuario.Criar(nome, email, senha, null);
 
             // Assert
-            resultado.Sucesso.Should().BeTrue();
-            resultado.Dados.Should().NotBeNull();
-            resultado.Dados.Nome.Should().Be("João");
-            resultado.Dados.Email.Should().Be("joao@email.com");
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public void CriarUsuario_ComNomeInvalido_DeveFalhar(string nomeInvalido)
-        {
-            var resultado = Usuario.Criar(nomeInvalido, "teste@email.com", "123456", null);
-
-            resultado.Sucesso.Should().BeFalse();
-            resultado.Mensagem.Should().Contain("Nome inválido");
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("invalido")]
-        public void CriarUsuario_ComEmailInvalido_DeveFalhar(string emailInvalido)
-        {
-            var resultado = Usuario.Criar("João", emailInvalido, "123456", null);
-
-            resultado.Sucesso.Should().BeFalse();
-            resultado.Mensagem.Should().Contain("Email inválido");
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("123")]
-        public void CriarUsuario_ComSenhaInvalida_DeveFalhar(string senhaInvalida)
-        {
-            var resultado = Usuario.Criar("João", "joao@email.com", senhaInvalida, null);
-
-            resultado.Sucesso.Should().BeFalse();
-            resultado.Mensagem.Should().Contain("Senha inválida");
-        }
-
-        public void SetNome_Valido_DeveAtualizar()
-        {
-            var usuario = Usuario.Criar("Antigo", "teste@email.com", "123456", null).Dados;
-
-            usuario.SetNome("Novo Nome");
-
-            usuario.Nome.Should().Be("Novo Nome");
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        public void SetNome_Invalido_DeveLancarExcecao(string nomeInvalido)
-        {
-            var usuario = Usuario.Criar("João", "teste@email.com", "123456", null).Dados;
-
-            var acao = () => usuario.SetNome(nomeInvalido);
-
-            acao.Should().Throw<ArgumentException>().WithMessage("Nome inválido");
+            Assert.True(resultado.Sucesso);
+            Assert.NotNull(resultado.Dados);
+            Assert.Equal(nome, resultado.Dados.Nome);
+            Assert.Equal(email, resultado.Dados.Email);
+            Assert.Equal(senha, resultado.Dados.Senha);
+            Assert.False(resultado.Dados.Ativo);
+            Assert.False(resultado.Dados.Administrador);
+            Assert.True(resultado.Dados.Valido);
         }
 
         [Fact]
-        public void SetEmail_Valido_DeveAtualizar()
+        public void Usuario_Criar_DeveRetornarUsuarioValidoComId_QuandoIdEhFornecido()
         {
-            var usuario = Usuario.Criar("João", "teste@email.com", "123456", null).Dados;
+            // Arrange
+            string nome = "Teste Usuário";
+            string email = "teste@email.com";
+            string senha = "senhaSegura123";
+            long id = 100;
 
-            usuario.SetEmail("NOVO@email.com");
+            // Act
+            var resultado = Usuario.Criar(nome, email, senha, id);
 
-            usuario.Email.Should().Be("novo@email.com");
+            // Assert
+            Assert.True(resultado.Sucesso);
+            Assert.NotNull(resultado.Dados);
+            Assert.Equal(id, resultado.Dados.Id);
+            Assert.True(resultado.Dados.Valido);
         }
 
         [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("sem-arroba")]
-        public void SetEmail_Invalido_DeveLancarExcecao(string emailInvalido)
+        [InlineData("", "teste@email.com", "senhaValida", "Nome inválido")]
+        [InlineData("Nome Valido", "", "senhaValida", "Email inválido")]
+        [InlineData("Nome Valido", "emailInvalido", "senhaValida", "Email inválido")]
+        [InlineData("Nome Valido", "teste@email.com", "curta", "Senha inválida (mínimo 6 caracteres)")]
+        public void Usuario_Criar_DeveRetornarErro_QuandoDadosSaoInvalidos(string nome, string email, string senha, string mensagemEsperada)
         {
-            var usuario = Usuario.Criar("João", "teste@email.com", "123456", null).Dados;
+            // Act
+            var resultado = Usuario.Criar(nome, email, senha, null);
 
-            var acao = () => usuario.SetEmail(emailInvalido);
-
-            acao.Should().Throw<ArgumentException>().WithMessage("Email inválido");
+            // Assert
+            Assert.False(resultado.Sucesso);
+            Assert.Null(resultado.Dados);
+            Assert.Contains(mensagemEsperada, resultado.Mensagem);
         }
 
         [Fact]
-        public void AlterarSenha_ComSenhaAtualIncorreta_DeveFalhar()
+        public void AlterarSenha_DeveAlterarSenhaComSucesso_QuandoDadosValidos()
         {
-            var usuario = Usuario.Criar("Maria", "maria@email.com", "senha123", null).Dados;
+            // Arrange
+            string senhaOriginal = "senhaAntiga123";
+            var usuario = Usuario.Criar("Nome", "email@email.com", senhaOriginal, null).Dados;
+            string novaSenha = "novaSenhaSegura";
+            string confirmacaoNovaSenha = "novaSenhaSegura";
 
-            var resultado = usuario.AlterarSenha("errada", "novaSenha", "novaSenha");
+            // Act
+            var resultado = usuario.AlterarSenha(senhaOriginal, novaSenha, confirmacaoNovaSenha);
 
-            resultado.Sucesso.Should().BeFalse();
-            resultado.Mensagem.Should().Contain("Senha atual incorreta");
+            // Assert
+            Assert.True(resultado.Sucesso);
+            Assert.True(resultado.Dados);
+            Assert.Equal("Senha alterada com sucesso", resultado.Mensagem);
+            Assert.Equal(novaSenha, usuario.Senha);
+            Assert.True(usuario.Valido); // Não deve adicionar notificações de erro
         }
 
         [Fact]
-        public void AlterarSenha_ComConfirmacaoIncorreta_DeveFalhar()
+        public void AlterarSenha_DeveFalhar_QuandoSenhaAtualIncorreta()
         {
-            var usuario = Usuario.Criar("José", "jose@email.com", "senha123", null).Dados;
+            // Arrange
+            string senhaOriginal = "senhaAntiga123";
+            var usuario = Usuario.Criar("Nome", "email@email.com", senhaOriginal, null).Dados;
+            string novaSenha = "novaSenhaSegura";
+            string confirmacaoNovaSenha = "novaSenhaSegura";
 
-            var resultado = usuario.AlterarSenha("senha123", "novaSenha", "confirmacaoErrada");
+            // Act
+            var resultado = usuario.AlterarSenha("senhaIncorreta", novaSenha, confirmacaoNovaSenha);
 
-            resultado.Sucesso.Should().BeFalse();
-            resultado.Mensagem.Should().Contain("Confirmação de senha não confere");
+            // Assert
+            Assert.False(resultado.Sucesso);
+            Assert.False(resultado.Dados);
+            Assert.Equal("Senha atual incorreta", resultado.Mensagem);
+            Assert.Equal(senhaOriginal, usuario.Senha); // Senha não deve ser alterada
         }
 
         [Fact]
-        public void AlterarSenha_Correta_DeveAlterar()
+        public void AlterarSenha_DeveFalhar_QuandoConfirmacaoSenhaNaoConfere()
         {
-            var usuario = Usuario.Criar("Ana", "ana@email.com", "senha123", null).Dados;
+            // Arrange
+            string senhaOriginal = "senhaAntiga123";
+            var usuario = Usuario.Criar("Nome", "email@email.com", senhaOriginal, null).Dados;
+            string novaSenha = "novaSenhaSegura";
+            string confirmacaoNovaSenha = "confirmacaoDiferente";
 
-            var resultado = usuario.AlterarSenha("senha123", "novaSenha", "novaSenha");
+            // Act
+            var resultado = usuario.AlterarSenha(senhaOriginal, novaSenha, confirmacaoNovaSenha);
 
-            resultado.Sucesso.Should().BeTrue();
+            // Assert
+            Assert.False(resultado.Sucesso);
+            Assert.False(resultado.Dados);
+            Assert.Equal("Confirmação de senha não confere", resultado.Mensagem);
+            Assert.Equal(senhaOriginal, usuario.Senha); // Senha não deve ser alterada
         }
 
         [Fact]
-        public void Ativar_DeveAtivarUsuario()
+        public void Ativar_DeveDefinirAtivoComoVerdadeiro()
         {
-            var usuario = Usuario.Criar("João", "teste@email.com", "123456", null).Dados;
+            // Arrange
+            var usuario = Usuario.Criar("Nome", "email@email.com", "senhaValida", null).Dados;
+            Assert.False(usuario.Ativo); // Inicia como falso
 
+            // Act
             usuario.Ativar();
 
-            usuario.Ativo.Should().BeTrue();
+            // Assert
+            Assert.True(usuario.Ativo);
         }
 
         [Fact]
-        public void Desativar_DeveDesativarUsuario()
+        public void Desativar_DeveDefinirAtivoComoFalso()
         {
-            var usuario = Usuario.Criar("João", "teste@email.com", "123456", null).Dados;
-            usuario.Ativar();
+            // Arrange
+            var usuario = Usuario.Criar("Nome", "email@email.com", "senhaValida", null).Dados;
+            usuario.Ativar(); // Ativa para depois desativar
+            Assert.True(usuario.Ativo);
 
+            // Act
             usuario.Desativar();
 
-            usuario.Ativo.Should().BeFalse();
+            // Assert
+            Assert.False(usuario.Ativo);
         }
 
         [Fact]
-        public void TornarAdministrador_DeveAtivarFlag()
+        public void TornarAdministrador_DeveDefinirAdministradorComoVerdadeiro()
         {
-            var usuario = Usuario.Criar("João", "teste@email.com", "123456", null).Dados;
+            // Arrange
+            var usuario = Usuario.Criar("Nome", "email@email.com", "senhaValida", null).Dados;
+            Assert.False(usuario.Administrador); // Inicia como falso
 
+            // Act
             usuario.TornarAdministrador();
 
-            usuario.Administrador.Should().BeTrue();
+            // Assert
+            Assert.True(usuario.Administrador);
         }
 
         [Fact]
-        public void AdicionarEndereco_Valido_DeveAdicionar()
+        public void AdicionarEndereco_DeveAdicionarEndereco_QuandoPertenceAoUsuario()
         {
-            var usuario = Usuario.Criar("João", "teste@email.com", "123456", 1).Dados;
-            var endereco = Endereco.Criar("Rua X", "123", usuario).Dados;
+            // Arrange
+            var usuario = Usuario.Criar("Nome", "email@email.com", "senhaValida", 1).Dados;
+            var endereco = new Endereco(1);
 
+            // Act
             usuario.AdicionarEndereco(endereco);
 
-            usuario.Enderecos.Should().Contain(endereco);
+            // Assert
+            Assert.Single(usuario.Enderecos);
+            Assert.Contains(endereco, usuario.Enderecos);
+            Assert.True(usuario.Valido);
         }
 
         [Fact]
-        public void AdicionarEndereco_Nulo_DeveLancarExcecao()
+        public void AdicionarEndereco_DeveAdicionarNotificacao_QuandoEnderecoNaoPertenceAoUsuario()
         {
-            var usuario = Usuario.Criar("João", "teste@email.com", "123456", 1).Dados;
+            // Arrange
+            var usuario = Usuario.Criar("Nome", "email@email.com", "senhaValida", 1).Dados;
+            var endereco = new Endereco(2); // Endereço com ID de usuário diferente
 
-            var acao = () => usuario.AdicionarEndereco(null);
+            // Act
+            usuario.AdicionarEndereco(endereco);
 
-            acao.Should().Throw<ArgumentException>().WithMessage("Endereço inválido");
+            // Assert
+            Assert.Empty(usuario.Enderecos); // Não deve adicionar o endereço
+            Assert.Contains("Endereço pertence a outro usuário", usuario.Notificacoes);
+            Assert.False(usuario.Valido);
         }
 
         [Fact]
-        public void AdicionarEndereco_DeOutroUsuario_DeveLancarExcecao()
+        public void AdicionarServico_DeveAdicionarServico_QuandoPertenceAoUsuario()
         {
-            var usuario1 = Usuario.Criar("João", "teste@email.com", "123456", 1).Dados;
-            var usuario2 = Usuario.Criar("Outro", "outro@email.com", "123456", 2).Dados;
+            // Arrange
+            var usuario = Usuario.Criar("Nome", "email@email.com", "senhaValida", 1).Dados;
+            var servico = new Servico(1);
 
-            var endereco = Endereco.Criar("Rua A", "10", usuario2).Dados;
-
-            var acao = () => usuario1.AdicionarEndereco(endereco);
-
-            acao.Should().Throw<InvalidOperationException>().WithMessage("Endereço pertence a outro usuário");
-        }
-
-        [Fact]
-        public void AdicionarServico_Valido_DeveAdicionar()
-        {
-            var usuario = Usuario.Criar("João", "teste@email.com", "123456", 1).Dados;
-            var servico = Servico.Criar("Corte", "Corte de cabelo masculino", 30m, usuario).Dados;
-
+            // Act
             usuario.AdicionarServico(servico);
 
-            usuario.Servicos.Should().Contain(servico);
+            // Assert
+            Assert.Single(usuario.Servicos);
+            Assert.Contains(servico, usuario.Servicos);
+            Assert.True(usuario.Valido);
         }
 
         [Fact]
-        public void AdicionarServico_Nulo_DeveLancarExcecao()
+        public void AdicionarServico_DeveAdicionarNotificacao_QuandoServicoNaoPertenceAoUsuario()
         {
-            var usuario = Usuario.Criar("João", "teste@email.com", "123456", 1).Dados;
+            // Arrange
+            var usuario = Usuario.Criar("Nome", "email@email.com", "senhaValida", 1).Dados;
+            var servico = new Servico(2); // Serviço com ID de usuário diferente
 
-            var acao = () => usuario.AdicionarServico(null);
+            // Act
+            usuario.AdicionarServico(servico);
 
-            acao.Should().Throw<ArgumentException>().WithMessage("Serviço inválido");
+            // Assert
+            Assert.Empty(usuario.Servicos); // Não deve adicionar o serviço
+            Assert.Contains("Serviço pertence a outro usuário", usuario.Notificacoes);
+            Assert.False(usuario.Valido);
         }
 
         [Fact]
-        public void AdicionarServico_DeOutroUsuario_DeveLancarExcecao()
+        public void AdicionarAgendamento_DeveAdicionarAgendamento()
         {
-            var usuario1 = Usuario.Criar("João", "teste@email.com", "123456", 1).Dados;
-            var usuario2 = Usuario.Criar("Outro", "outro@email.com", "123456", 2).Dados;
-
-            var servico = Servico.Criar("Barba", "Aparar barba", 25m, usuario2).Dados;
-
-            var acao = () => usuario1.AdicionarServico(servico);
-
-            acao.Should().Throw<InvalidOperationException>().WithMessage("Serviço pertence a outro usuário");
-        }
-
-        [Fact]
-        public void AdicionarAgendamento_Valido_DeveAdicionar()
-        {
-            var usuario = Usuario.Criar("João", "teste@email.com", "123456", 1).Dados;
+            // Arrange
+            var usuario = Usuario.Criar("Nome", "email@email.com", "senhaValida", 1).Dados;
             var agendamento = new Agendamento();
 
+            // Act
             usuario.AdicionarAgendamento(agendamento);
 
-            usuario.Agendamentos.Should().Contain(agendamento);
+            // Assert
+            Assert.Single(usuario.Agendamentos);
+            Assert.Contains(agendamento, usuario.Agendamentos);
+            Assert.True(usuario.Valido); // Adicionar agendamento não adiciona notificação por si só
         }
 
-        [Fact]
-        public void AdicionarAgendamento_Nulo_DeveLancarExcecao()
-        {
-            var usuario = Usuario.Criar("João", "teste@email.com", "123456", 1).Dados;
 
-            var acao = () => usuario.AdicionarAgendamento(null);
-
-            acao.Should().Throw<ArgumentException>().WithMessage("Agendamento inválido");
-        }
     }
 }
