@@ -1,4 +1,6 @@
 ﻿using Agenda.Dominio.Utils;
+using System.Drawing;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Agenda.Dominio.Entidades
 {
@@ -20,8 +22,8 @@ namespace Agenda.Dominio.Entidades
 
         private void SetSenha(string senha)
         {
-            if (string.IsNullOrWhiteSpace(senha) || senha.Length < 6)
-                AdicionarNotificacao("Senha inválida (mínimo 6 caracteres)");
+            if (string.IsNullOrWhiteSpace(senha) || senha.Length < 6 || !senha.Any(char.IsDigit))
+                AdicionarNotificacao("Senha deve ter no mínimo 6 caracteres e conter ao menos um número");
 
             Senha = senha;
         }
@@ -80,12 +82,9 @@ namespace Agenda.Dominio.Entidades
 
         public static ResultadoGenerico<Usuario> Criar(string nome, string email, string senha, long? id)
         {
-            Usuario usuario;
-
-            if (id is not null)
-                usuario = new Usuario(nome, email, senha, id);
-
-            usuario = new Usuario(nome, email, senha, null);
+            Usuario usuario = id is not null
+                ? new Usuario(nome, email, senha, id)
+                : new Usuario(nome, email, senha, null);
 
             if (!usuario.Valido)            
                 return new ResultadoGenerico<Usuario>(false, "Erro: " + usuario.ObterMensagemDeErros(), null);            
@@ -93,26 +92,58 @@ namespace Agenda.Dominio.Entidades
             return new ResultadoGenerico<Usuario>(true,"Usuário criado com sucesso", usuario);
         }
 
-        public void AdicionarEndereco(Endereco endereco)
-        {   
+        public ResultadoGenerico<bool> AdicionarEndereco(string logradouro, string numero)
+        {
+            var enderecoResult = Endereco.Criar(logradouro,numero,this);
 
-            if (endereco.IdUsuario != Id)
-                AdicionarNotificacao("Endereço pertence a outro usuário");
+            if (!enderecoResult.Sucesso) 
+                return new ResultadoGenerico<bool>(false, enderecoResult.Mensagem, false);           
 
-            _enderecos.Add(endereco);
+            var enderecoObj = enderecoResult.Dados;
+
+            _enderecos.Add(enderecoObj);
+
+            return new ResultadoGenerico<bool>(true, "Endereco adicionado com sucesso", true);
         }
 
-        public void AdicionarServico(Servico servico)
+        public ResultadoGenerico<bool> AdicionarServico(string nome, string descricao, decimal valor)
+        {
+            var servicoResult = Servico.Criar(nome,descricao,valor,this);
+
+            if (!servicoResult.Sucesso)
+                return new ResultadoGenerico<bool>(false, servicoResult.Mensagem, false);
+
+            var servicoObj = servicoResult.Dados;
+
+            _servicos.Add(servicoObj);
+
+            return new ResultadoGenerico<bool>(true, "Serviço adicionado com sucesso", true);
+        }
+
+        public ResultadoGenerico<bool> DeterminarDisponibilidade(DateTime data, TimeSpan horaInicio, TimeSpan horaFim, Servico servico)
         {
             if (servico.IdUsuario != Id)
-                AdicionarNotificacao("Serviço pertence a outro usuário");
+                return new ResultadoGenerico<bool>(false, "O serviço nao pertence ao usuario", true);
 
-            _servicos.Add(servico);
+            var disponibilidadeResult = Disponibilidade.Criar(data, horaInicio, horaFim, servico);
+
+            if(!disponibilidadeResult.Sucesso)
+                return new ResultadoGenerico<bool>(false, disponibilidadeResult.Mensagem, false);
+
+            return new ResultadoGenerico<bool>(true, "Disponibilidade determinada com sucesso", true);
         }
 
-        public void AdicionarAgendamento(Agendamento agendamento)
+        public ResultadoGenerico<bool> AgendarServico(Disponibilidade disponibilidade) 
         {
-            _agendamentos.Add(agendamento);
+            if(_servicos.Contains(disponibilidade.Servico))
+                return new ResultadoGenerico<bool>(false, "O Usuario nao pode agendar seus proprios servicos", false);
+
+            var agendamentoResult = Agendamento.Criar(disponibilidade, this);
+
+            if(!agendamentoResult.Sucesso)
+                return new ResultadoGenerico<bool>(false, agendamentoResult.Mensagem, false);
+
+            return new ResultadoGenerico<bool>(true, "Disponibilidade determinada com sucesso", true);
         }
 
         #endregion

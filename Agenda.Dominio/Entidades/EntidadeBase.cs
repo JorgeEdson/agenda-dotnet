@@ -20,12 +20,12 @@ namespace Agenda.Dominio.Entidades
             Id = id;
         }
 
-        protected void AdicionarNotificacao(string mensagem)
+        public void AdicionarNotificacao(string mensagem)
         {
             _notificacoes.Add(mensagem);
         }
 
-        protected void LimparNotificacoes()
+        public void LimparNotificacoes()
         {
             _notificacoes.Clear();
         }

@@ -7,28 +7,26 @@ using static Agenda.Aplicacao.Factory.CommandFactory;
 
 namespace Agenda.Aplicacao.Comunicacao.Usuario.Commands
 {
-    public class VincularServicoAoUsuarioHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<Command<VincularServicoAoUsuarioCommand, ResultadoGenerico<bool>>, ResultadoGenerico<bool>>
+    public class AdicionarServicoHandler(IUnitOfWork unitOfWork)
+    : IRequestHandler<Command<AdicionarServicoCommand, ResultadoGenerico<bool>>, ResultadoGenerico<bool>>
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
-        public async Task<ResultadoGenerico<bool>> Handle(Command<VincularServicoAoUsuarioCommand, ResultadoGenerico<bool>> request, CancellationToken cancellationToken)
+        public async Task<ResultadoGenerico<bool>> Handle(Command<AdicionarServicoCommand, ResultadoGenerico<bool>> request, CancellationToken cancellationToken)
         {
             try
             {
-                var data = request.Data;
+                var requisicao = request.Data;
 
-                var usuario = await _unitOfWork.ObterPorIdAsync<UsuarioEntidade>(data.IdUsuario);
+                var usuario = await _unitOfWork.ObterPorIdAsync<UsuarioEntidade>(requisicao.IdUsuario);
 
                 if (usuario is null)
                     return new ResultadoGenerico<bool>(false, "Usuário não encontrado", false);
 
-                var resultadoServico = Servico.Criar(data.Nome, data.Descricao, data.Valor, usuario);
+                var resultadoAdicaoServico = usuario.AdicionarServico(requisicao.Nome, requisicao.Descricao, requisicao.Valor);
 
-                if (!resultadoServico.Sucesso)
-                    return new ResultadoGenerico<bool>(false, resultadoServico.Mensagem, false);
-
-                usuario.AdicionarServico(resultadoServico.Dados);
+                if(!resultadoAdicaoServico.Sucesso)
+                    return new ResultadoGenerico<bool>(false, resultadoAdicaoServico.Mensagem, false);
 
                 await _unitOfWork.SaveChangesAsync();
 
@@ -42,7 +40,7 @@ namespace Agenda.Aplicacao.Comunicacao.Usuario.Commands
     }
 
 
-    public class VincularServicoAoUsuarioCommand
+    public class AdicionarServicoCommand
     {
         public long IdUsuario { get; set; }
         public string Nome { get; set; }

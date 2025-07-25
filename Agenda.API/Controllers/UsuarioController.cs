@@ -14,7 +14,7 @@ namespace Agenda.API.Controllers
     {   
         private IMediator _mediator = mediator;
 
-        [HttpPost("AutoCadastro")]  
+        [HttpPost("auto-cadastro")]  
         public async Task<IActionResult> AutoCadastro([FromBody] AutoCadastroCommand request)
         {
             
@@ -37,7 +37,7 @@ namespace Agenda.API.Controllers
             return Ok(resultado);
         }
 
-        [HttpPut("AlterarSenha")]
+        [HttpPut("alterar-senha")]
         public async Task<IActionResult> AlterarSenha([FromBody] AlterarSenhaUsuarioCommand request)
         {
             var resultado = await _mediator.Send(CommandFactory.Create<AlterarSenhaUsuarioCommand, ResultadoGenerico<bool>>(request));
@@ -48,7 +48,7 @@ namespace Agenda.API.Controllers
             return Ok(resultado);
         }
 
-        [HttpPost("AtivarUsuario")]
+        [HttpPost("ativar-usuario")]
         public async Task<IActionResult> AtivarUsuario([FromBody] AtivarUsuarioCommand request)
         {
             var resultado = await _mediator.Send(CommandFactory.Create<AtivarUsuarioCommand, ResultadoGenerico<bool>>(request));
@@ -59,7 +59,7 @@ namespace Agenda.API.Controllers
             return Ok(resultado);
         }
 
-        [HttpPost("DesativarUsuario")]
+        [HttpPost("desativar-usuario")]
         public async Task<IActionResult> DesativarUsuario([FromBody] DesativarUsuarioCommand request)
         {
             var resultado = await _mediator.Send(CommandFactory.Create<DesativarUsuarioCommand, ResultadoGenerico<bool>>(request));
@@ -70,7 +70,7 @@ namespace Agenda.API.Controllers
             return Ok(resultado);
         }
 
-        [HttpPost("TornarAdministrador")]
+        [HttpPost("tornar-administrador")]
         public async Task<IActionResult> TornarAdministrador([FromBody] TornarUsuarioAdministradorCommand request)
         {
             var resultado = await _mediator.Send(CommandFactory.Create<TornarUsuarioAdministradorCommand, ResultadoGenerico<bool>>(request));
@@ -81,11 +81,11 @@ namespace Agenda.API.Controllers
             return Ok(resultado);
         }
 
-        [HttpPost("VincularEndereco")]
-        public async Task<IActionResult> VincularEndereco([FromBody] VincularEnderecoAoUsuarioCommand request)
+        [HttpPost("adicionar-endereco")]
+        public async Task<IActionResult> AdicionarEndereco([FromBody] AdicionarEnderecoCommand request)
         {
             var resultado = await _mediator.Send(
-                CommandFactory.Create<VincularEnderecoAoUsuarioCommand, ResultadoGenerico<bool>>(request)
+                CommandFactory.Create<AdicionarEnderecoCommand, ResultadoGenerico<bool>>(request)
             );
 
             if (!resultado.Sucesso)
@@ -94,10 +94,10 @@ namespace Agenda.API.Controllers
             return Ok(resultado);
         }
 
-        [HttpPost("VincularServico")]
-        public async Task<IActionResult> VincularServico([FromBody] VincularServicoAoUsuarioCommand request)
+        [HttpPost("adicionar-servico")]
+        public async Task<IActionResult> AdicionarServico([FromBody] AdicionarServicoCommand request)
         {
-            var resultado = await _mediator.Send(CommandFactory.Create<VincularServicoAoUsuarioCommand, ResultadoGenerico<bool>>(request));
+            var resultado = await _mediator.Send(CommandFactory.Create<AdicionarServicoCommand, ResultadoGenerico<bool>>(request));
 
             if (!resultado.Sucesso)
                 return BadRequest(resultado);
@@ -116,7 +116,7 @@ namespace Agenda.API.Controllers
             return Ok(resultado);
         }
 
-        [HttpGet("ObterTodos")]
+        [HttpGet("obter-todos")]
         public async Task<IActionResult> ObterTodos()
         {
             var resultado = await _mediator.Send(new ObterTodosUsuariosQuery());
@@ -127,7 +127,7 @@ namespace Agenda.API.Controllers
             return Ok(resultado);
         }
 
-        [HttpGet("ObterTodosPaginado")]
+        [HttpGet("obter-todos-paginado")]
         public async Task<IActionResult> ObterUsuariosPaginados([FromQuery] int pagina = 0, [FromQuery] int linhasPorPagina = 10)
         {
             var resultado = await _mediator.Send(
@@ -137,8 +137,8 @@ namespace Agenda.API.Controllers
             return Ok(resultado);
         }
 
-        [HttpGet("ObterUsuariosComFiltro")]
-        public async Task<IActionResult> ObterUsuariosComFiltro(
+        [HttpGet("obter-usuarios-filtrado")]
+        public async Task<IActionResult> ObterUsuariosFiltrado(
             [FromQuery] string? nome,
             [FromQuery] string? email,
             [FromQuery] bool? ativo,

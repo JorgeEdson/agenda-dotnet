@@ -8,11 +8,11 @@ using static Agenda.Aplicacao.Factory.CommandFactory;
 namespace Agenda.Aplicacao.Comunicacao.Usuario.Commands
 {
     public class VincularEnderecoAoUsuarioHandler(IUnitOfWork unitOfWork) :
-        IRequestHandler<Command<VincularEnderecoAoUsuarioCommand, ResultadoGenerico<bool>>, ResultadoGenerico<bool>>
+        IRequestHandler<Command<AdicionarEnderecoCommand, ResultadoGenerico<bool>>, ResultadoGenerico<bool>>
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
-        public async Task<ResultadoGenerico<bool>> Handle(Command<VincularEnderecoAoUsuarioCommand, ResultadoGenerico<bool>> request, CancellationToken cancellationToken)
+        public async Task<ResultadoGenerico<bool>> Handle(Command<AdicionarEnderecoCommand, ResultadoGenerico<bool>> request, CancellationToken cancellationToken)
         {
             try
             {
@@ -23,17 +23,11 @@ namespace Agenda.Aplicacao.Comunicacao.Usuario.Commands
                 if (usuario == null)
                     return new ResultadoGenerico<bool>(false, "Usuário não encontrado", false);
 
-                // 2. Criar o endereço com lógica de domínio
-                var resultadoEndereco = Endereco.Criar(data.Logradouro, data.Numero, usuario);
-                if (!resultadoEndereco.Sucesso)
-                    return new ResultadoGenerico<bool>(false, resultadoEndereco.Mensagem, false);
 
-                var endereco = resultadoEndereco.Dados;
-
-                // 3. Adicionar à coleção de endereços do usuário
-                usuario.AdicionarEndereco(endereco); // ← já existe no domínio
-
-                // 4. Persistir
+                var resultadoAdicaoEndereco = usuario.AdicionarEndereco(data.Logradouro, data.Numero);
+                if(!resultadoAdicaoEndereco.Sucesso)
+                    return new ResultadoGenerico<bool>(false, resultadoAdicaoEndereco.Mensagem, false);
+                
                 await _unitOfWork.SaveChangesAsync();
 
                 return new ResultadoGenerico<bool>(true, "Endereço vinculado com sucesso", true);
@@ -45,7 +39,7 @@ namespace Agenda.Aplicacao.Comunicacao.Usuario.Commands
         }
     }
 
-    public class VincularEnderecoAoUsuarioCommand
+    public class AdicionarEnderecoCommand
     {
         public long UsuarioId { get; set; }
         public string Logradouro { get; set; } = string.Empty;

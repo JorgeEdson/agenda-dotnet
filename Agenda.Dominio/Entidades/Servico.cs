@@ -13,6 +13,16 @@ namespace Agenda.Dominio.Entidades
         public List<Disponibilidade> Disponibilidades { get; private set; }
         #endregion
 
+        #region Metodos Privados
+        private void VincularUsuario(Usuario usuario)
+        {
+            if (usuario is null || usuario.Id <= 0)
+                AdicionarNotificacao("Usuário inválido para vincular ao serviço");
+
+            IdUsuario = usuario.Id;
+        }
+        #endregion
+
         #region Construtores
         public Servico() { }
 
@@ -30,15 +40,15 @@ namespace Agenda.Dominio.Entidades
         public void SetNome(string nome)
         {
             if (string.IsNullOrWhiteSpace(nome))
-                throw new ArgumentException("Nome do serviço inválido");
+                AdicionarNotificacao("Nome do serviço inválido");
 
-            Nome = nome.Trim();
+            Nome = nome;
         }
 
         public void SetDescricao(string descricao)
         {
             if (string.IsNullOrWhiteSpace(descricao))
-                throw new ArgumentException("Descrição do serviço inválida");
+                AdicionarNotificacao("Descrição do serviço inválida");
 
             Descricao = descricao.Trim();
         }
@@ -46,34 +56,19 @@ namespace Agenda.Dominio.Entidades
         public void SetValor(decimal valor)
         {
             if (valor < 0)
-                throw new ArgumentException("Valor do serviço não pode ser negativo");
+                AdicionarNotificacao("Valor do serviço não pode ser negativo");
 
             Valor = valor;
         }
 
-        public void VincularUsuario(Usuario usuario)
-        {
-            if (usuario is null || usuario.Id <= 0)
-                throw new ArgumentException("Usuário inválido");
-
-            Usuario = usuario;
-            IdUsuario = usuario.Id;
-        }
-
         public static ResultadoGenerico<Servico> Criar(string nome, string descricao, decimal valor, Usuario usuario)
         {
-            try
-            {
-                return new ResultadoGenerico<Servico>(
-                true,
-                "Serviço criado com sucesso!",
-                new Servico(nome, descricao, valor, usuario)
-            );
-            }
-            catch (Exception ex) 
-            {
-                return new ResultadoGenerico<Servico>(false, "Falha ao criar endereço: " + ex.Message, null);
-            }
+            var servico = new Servico(nome, descricao, valor, usuario);
+
+            if (!servico.Valido)
+                return new ResultadoGenerico<Servico>(false, "Erro ao criar serviço: " + servico.ObterMensagemDeErros(), null);
+
+            return new ResultadoGenerico<Servico>(true, "Serviço criado com sucesso!", servico);
         }
         #endregion
     }
