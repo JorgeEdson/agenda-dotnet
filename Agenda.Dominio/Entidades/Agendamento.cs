@@ -14,62 +14,65 @@ namespace Agenda.Dominio.Entidades
         #endregion
 
         #region Metodos Privados
-        private void AceitarAgendamento() 
-        { 
-            Aceito = true;
-        }
-        private void RegeitarAgendamento()
+        private void VincularDisponibilidade(Disponibilidade disponibilidade)
         {
-            Aceito = true;
+            if (disponibilidade is null || disponibilidade.Id <= 0) 
+            {
+                AdicionarNotificacao("Agenda inválida");
+                return;
+            
+            }
+
+            Disponibilidade = disponibilidade;
+            IdDisponibilidade = disponibilidade.Id;
+        }
+
+        private void VincularUsuario(Usuario usuario)
+        {
+            if (usuario is null || usuario.Id <= 0) 
+            {
+                AdicionarNotificacao("Usuário inválido");
+                return;
+            }
+
+            UsuarioCliente = usuario;
+            IdUsuarioCliente = usuario.Id;
         }
         #endregion
 
         #region Construtores
         public Agendamento() { }
 
-        private Agendamento(Disponibilidade agenda, Usuario usuarioCliente)
+        private Agendamento(Disponibilidade disponibilidade, Usuario usuarioCliente)
         {
-            VincularAgenda(agenda);
+            VincularDisponibilidade(disponibilidade);
             VincularUsuario(usuarioCliente);
+            Aceito = false;
+            DataCadastro = DateTime.Now;
         }
         #endregion
 
         #region Métodos Públicos
-        public void VincularAgenda(Disponibilidade disponibilidade)
+
+        public void AceitarAgendamento() => Aceito = true;
+        
+
+        public static ResultadoGenerico<Agendamento> Criar(Disponibilidade disponibilidade, Usuario usuarioCliente)
         {
-            if (disponibilidade is null || disponibilidade.Id <= 0)
-                throw new ArgumentException("Agenda inválida");
+            Agendamento agendamento = new Agendamento(disponibilidade,usuarioCliente);
 
-            IdDisponibilidade = disponibilidade.Id;
-        }
-
-        public void VincularUsuario(Usuario usuario)
-        {
-            if (usuario is null || usuario.Id <= 0)
-                throw new ArgumentException("Usuário inválido");
-
-            IdUsuarioCliente = usuario.Id;
-        }
-
-        public static ResultadoGenerico<Agendamento> Criar(Disponibilidade agenda, Usuario usuarioCliente)
-        {
-            try
-            {
-                return new ResultadoGenerico<Agendamento>(
-                true,
-                "Agendamento criado com sucesso!",
-                new Agendamento(agenda, usuarioCliente)
-                );
-            }
-            catch (Exception ex) 
-            {
+            if(!agendamento.Valido)
                 return new ResultadoGenerico<Agendamento>(
                     false,
-                    "Falha ao criar o Agendamento: " + ex.Message,
+                    "Falha ao criar o Agendamento: " + agendamento.ObterMensagemDeErros(),
                     null
                 );
-            
-            }
+
+            return new ResultadoGenerico<Agendamento>(
+                true,
+                "Agendamento criado com sucesso!",
+                new Agendamento(disponibilidade, usuarioCliente)
+                );
             
         }
         #endregion

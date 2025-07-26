@@ -28,6 +28,8 @@ namespace Agenda.Dominio.Interfaces
         Task<bool> VerificarEMailCadastrado(string email);
 
         Task<Usuario?> ObterUsuarioPorEmailAsync(string email);
+
+        Task<Usuario?> ObterUsuarioComEnderecos(long id);
         
     }
 }

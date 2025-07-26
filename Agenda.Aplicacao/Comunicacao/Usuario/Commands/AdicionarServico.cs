@@ -18,12 +18,17 @@ namespace Agenda.Aplicacao.Comunicacao.Usuario.Commands
             {
                 var requisicao = request.Data;
 
-                var usuario = await _unitOfWork.ObterPorIdAsync<UsuarioEntidade>(requisicao.IdUsuario);
+                var usuario = await _unitOfWork.ObterUsuarioComEnderecos(requisicao.IdUsuario);
 
                 if (usuario is null)
                     return new ResultadoGenerico<bool>(false, "Usuário não encontrado", false);
 
-                var resultadoAdicaoServico = usuario.AdicionarServico(requisicao.Nome, requisicao.Descricao, requisicao.Valor);
+                var endereco = usuario.Enderecos.FirstOrDefault(e => e.Id == requisicao.IdEndereco);
+
+                if (endereco is null)
+                    return new ResultadoGenerico<bool>(false, "Endereço não encontrado para este usuário", false);
+
+                var resultadoAdicaoServico = usuario.AdicionarServico(requisicao.Nome, requisicao.Descricao, requisicao.Valor, endereco);
 
                 if(!resultadoAdicaoServico.Sucesso)
                     return new ResultadoGenerico<bool>(false, resultadoAdicaoServico.Mensagem, false);
@@ -43,6 +48,7 @@ namespace Agenda.Aplicacao.Comunicacao.Usuario.Commands
     public class AdicionarServicoCommand
     {
         public long IdUsuario { get; set; }
+        public long IdEndereco { get; set; }
         public string Nome { get; set; }
         public string Descricao { get; set; }
         public decimal Valor { get; set; }

@@ -14,6 +14,16 @@ namespace Agenda.Dominio.Entidades
         #endregion
 
         #region Metodos Privados
+        private void VincularServico(Servico servico)
+        {
+            if (servico.Id <= 0 || servico is null)
+            {
+                AdicionarNotificacao("Serviço invalido");
+                return;
+            }
+            Servico = servico;
+            IdServico = servico.Id;
+        }
         #endregion
 
         #region Construtores
@@ -33,7 +43,8 @@ namespace Agenda.Dominio.Entidades
         {
             if (data <= DateTime.Now)
             {
-                throw new ArgumentException("Data de agendamento inválida");
+                AdicionarNotificacao("Data de agendamento inválida");
+                return;
             }
 
             Data = data;
@@ -42,7 +53,8 @@ namespace Agenda.Dominio.Entidades
         {
             if (horaInicio < TimeSpan.Zero || horaInicio > TimeSpan.FromHours(24))
             {
-                throw new ArgumentException("Hora de início inválida");
+                AdicionarNotificacao("Hora de início inválida");
+                return;
             }
             HoraInicio = horaInicio;
         }
@@ -51,38 +63,35 @@ namespace Agenda.Dominio.Entidades
         {
             if (horaFim < TimeSpan.Zero || horaFim > TimeSpan.FromHours(24))
             {
-                throw new ArgumentException("Hora de fim inválida");
+                AdicionarNotificacao("Hora de fim inválida");
+                return;
             }
-            HoraFim = horaFim;
-        }
 
-        public void VincularServico(Servico servico)
-        {
-            if (servico.Id <= 0 || servico is null)
+            if (HoraInicio != default && horaFim <= HoraInicio)
             {
-                throw new ArgumentException("ID de serviço inválido");
+                AdicionarNotificacao("Hora de fim deve ser posterior à hora de início");
+                return;
             }
-            IdServico = servico.Id;
+
+            HoraFim = horaFim;
         }
 
         public static ResultadoGenerico<Disponibilidade>  Criar(DateTime data, TimeSpan horaInicio, TimeSpan horaFim, Servico servico)
         {
-            try
-            {
+            Disponibilidade disponibilidade = new Disponibilidade(data, horaInicio, horaFim, servico);
+
+            if(!disponibilidade.Valido)
                 return new ResultadoGenerico<Disponibilidade>(
+                    false,
+                    "Erro: " + disponibilidade.ObterMensagemDeErros(),
+                    null
+                );
+
+            return new ResultadoGenerico<Disponibilidade>(
                 true,
                 "Agenda criada com sucesso!",
                 new Disponibilidade(data, horaInicio, horaFim, servico));
-            }
-            catch (Exception ex) 
-            {
-                return new ResultadoGenerico<Disponibilidade>(
-                    false,
-                    "Falha ao criar Disponibilidade: "+ex.Message,
-                    null
-                );
-            }
-            
+
         }
         #endregion
     }

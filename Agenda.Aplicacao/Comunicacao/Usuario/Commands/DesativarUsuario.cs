@@ -15,17 +15,22 @@ namespace Agenda.Aplicacao.Comunicacao.Usuario.Commands
         {
             try
             {
-                var data = request.Data;
+                var requisicao = request.Data;
 
-                var usuario = await _unitOfWork.ObterPorIdAsync<UsuarioEntidade>(data.Id);
+                var usuarioAdministrador = await _unitOfWork.ObterPorIdAsync<UsuarioEntidade>(requisicao.IdAdministrador);
 
-                if (usuario is null)
-                    return new ResultadoGenerico<bool>(false, "Usuário não encontrado", false);
+                if (usuarioAdministrador is null)
+                    return new ResultadoGenerico<bool>(false, "Usuário administrador não encontrado", false);
 
-                if (!usuario.Ativo)
-                    return new ResultadoGenerico<bool>(false, "Usuário já está desativado", false);
+                var usuarioDesativacao = await _unitOfWork.ObterPorIdAsync<UsuarioEntidade>(requisicao.IdUsuarioDesativacao);
 
-                usuario.Desativar();
+                if (usuarioDesativacao is null)
+                    return new ResultadoGenerico<bool>(false, "Usuário de desativação não encontrado", false);
+
+                if (!usuarioDesativacao.Ativo)
+                    return new ResultadoGenerico<bool>(false, "Usuário de desativação já está desativado", false);
+
+                usuarioAdministrador.DesativarUsuario(usuarioDesativacao);
 
                 await _unitOfWork.SaveChangesAsync();
 
@@ -41,6 +46,8 @@ namespace Agenda.Aplicacao.Comunicacao.Usuario.Commands
 
     public class DesativarUsuarioCommand
     {
-        public long Id { get; set; }
+        public long IdAdministrador { get; set; }
+
+        public long IdUsuarioDesativacao { get; set; }
     }
 }

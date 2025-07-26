@@ -13,6 +13,17 @@ namespace Agenda.Dominio.Entidades
         #endregion
 
         #region Metodos Privados
+        private void VincularUsuario(Usuario usuario)
+        {
+            if (usuario is null || usuario.Id <= 0) 
+            {
+                AdicionarNotificacao("Usuário inválido");
+                return;
+            }
+
+            Usuario = usuario;
+            IdUsuario = usuario.Id;
+        }
         #endregion
 
         #region Construtores
@@ -23,7 +34,7 @@ namespace Agenda.Dominio.Entidades
             SetLogradouro(logradouro);
             SetNumero(numero);
             VincularUsuario(usuario);
-            Ativo = false;
+            Ativo = true;
         }
         #endregion
 
@@ -31,7 +42,7 @@ namespace Agenda.Dominio.Entidades
         public void SetLogradouro(string logradouro)
         {
             if (string.IsNullOrWhiteSpace(logradouro))
-                throw new ArgumentException("Logradouro inválido");
+                AdicionarNotificacao("Logradouro inválido");
 
             Logradouro = logradouro.Trim();
         }
@@ -39,44 +50,23 @@ namespace Agenda.Dominio.Entidades
         public void SetNumero(string numero)
         {
             if (string.IsNullOrWhiteSpace(numero))
-                throw new ArgumentException("Número inválido");
+                AdicionarNotificacao("Número inválido");
 
             Numero = numero.Trim();
         }
 
         public void Ativar() => Ativo = true;
 
-        public void Desativar() => Ativo = false;
-
-        public void VincularUsuario(Usuario usuario)
-        {
-            if (usuario is null || usuario.Id <= 0)
-                throw new ArgumentException("Usuário inválido");
-
-            Usuario = usuario;
-            IdUsuario = usuario.Id;
-        }
+        public void Desativar() => Ativo = false;        
 
         public static ResultadoGenerico<Endereco> Criar(string logradouro, string numero, Usuario usuario)
         {
+            Endereco endereco = new Endereco(logradouro,numero,usuario);
 
-            try 
-            {
-                return new ResultadoGenerico<Endereco>(
-                true,
-                "Endereço criado com sucesso!",
-                new Endereco(logradouro, numero, usuario)
-                );
-            }
-            catch (Exception ex) 
-            {
-                return new ResultadoGenerico<Endereco>(
-                    false,
-                    "Falha ao criar Endereco: "+ex.Message,
-                    null
-                );
-            }
-            
+            if (!endereco.Valido)
+                return new ResultadoGenerico<Endereco>(false, "Erro: " + endereco.ObterMensagemDeErros(), null);
+
+            return new ResultadoGenerico<Endereco>(true, "Endereço criado com sucesso!", endereco);
         }
         #endregion
     }

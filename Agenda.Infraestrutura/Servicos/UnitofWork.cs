@@ -13,8 +13,7 @@ namespace Agenda.Infraestrutura.Servicos
 {
     public class UnitofWork(Contexto contexto) : IUnitOfWork
     {
-        private readonly Contexto _contexto = contexto;  // Variavel somente de leitura
-
+        private readonly Contexto _contexto = contexto;
 
         public async Task AtualizarAsync<T>(T entidade) where T : EntidadeBase
         {
@@ -35,7 +34,6 @@ namespace Agenda.Infraestrutura.Servicos
         {   
             return await _contexto.Set<T>().FirstOrDefaultAsync(x=> x.Id == id);
         }
-
        
         public async Task<IEnumerable<T>> ObterTodosAsync<T>() where T : EntidadeBase
         {   
@@ -50,8 +48,6 @@ namespace Agenda.Infraestrutura.Servicos
                 .Take(linhasPorPagina)
                 .ToListAsync();
         }
-
-        
 
         public async Task<IEnumerable<Usuario>> ObterUsuariosComFiltroAsync(string? nome, string? email, bool? ativo, bool? administrador, int pagina, int linhasPorPagina)
         {
@@ -88,11 +84,6 @@ namespace Agenda.Infraestrutura.Servicos
             return Task.CompletedTask;
         }
 
-        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            return await _contexto.SaveChangesAsync(cancellationToken); 
-        }
-
         public async Task<bool> VerificarEMailCadastrado(string email)
         {
             // AsNoTracking = ignorando alterações da tabela
@@ -105,6 +96,18 @@ namespace Agenda.Infraestrutura.Servicos
             return await _contexto.Usuarios
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Email == email);
+        }
+
+        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            return await _contexto.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task<Usuario?> ObterUsuarioComEnderecos(long id)
+        {
+            return await _contexto.Usuarios
+                .Include(u => u.Enderecos)
+                .FirstOrDefaultAsync(u => u.Id == id);
         }
     }
 }

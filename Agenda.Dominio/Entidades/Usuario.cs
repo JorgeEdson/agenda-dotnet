@@ -1,6 +1,4 @@
 ﻿using Agenda.Dominio.Utils;
-using System.Drawing;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Agenda.Dominio.Entidades
 {
@@ -20,13 +18,35 @@ namespace Agenda.Dominio.Entidades
         public IReadOnlyCollection<Agendamento> Agendamentos => _agendamentos.AsReadOnly();
         #endregion
 
+        #region metodos privados
         private void SetSenha(string senha)
         {
-            if (string.IsNullOrWhiteSpace(senha) || senha.Length < 6 || !senha.Any(char.IsDigit))
+            if (string.IsNullOrWhiteSpace(senha) ||
+                senha.Trim().Length < 6 ||
+                !senha.Any(char.IsDigit) ||
+                !senha.Any(char.IsLetter))
+            {
                 AdicionarNotificacao("Senha deve ter no mínimo 6 caracteres e conter ao menos um número");
+                return;
+            }
 
             Senha = senha;
         }
+
+        private void Ativar() => Ativo = true;
+
+        private void Desativar() => Ativo = false;
+
+        private void AdicionarAgendamentoInterno(Agendamento agendamento)
+        {
+            if (agendamento is null)
+                return;
+
+            _agendamentos.Add(agendamento);
+        }
+        #endregion
+
+
 
         #region Construtores
         public Usuario() { }
@@ -47,16 +67,37 @@ namespace Agenda.Dominio.Entidades
         #region Métodos Públicos
         public void SetNome(string nome)
         {
-            if (string.IsNullOrWhiteSpace(nome))
+            if (string.IsNullOrWhiteSpace(nome)) 
+            {
                 AdicionarNotificacao("Nome inválido");
+                return;
+            }
 
             Nome = nome.Trim();
         }
 
         public void SetEmail(string email)
         {
-            if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
+            if (string.IsNullOrWhiteSpace(email))
+            {
                 AdicionarNotificacao("Email inválido");
+                return;
+            }
+
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                if (addr.Address != email.Trim())
+                {
+                    AdicionarNotificacao("Email inválido");
+                    return;
+                }
+            }
+            catch
+            {
+                AdicionarNotificacao("Email inválido");
+                return;
+            }
 
             Email = email.Trim().ToLower();
         }
@@ -74,11 +115,39 @@ namespace Agenda.Dominio.Entidades
             return new ResultadoGenerico<bool>(true, "Senha alterada com sucesso", true);
         }
 
-        public void Ativar() => Ativo = true;
-
-        public void Desativar() => Ativo = false;
-
         public void TornarAdministrador() => Administrador = true;
+
+        public ResultadoGenerico<bool> DesativarUsuario(Usuario usuario)
+        {
+            if (!Administrador)
+                return new ResultadoGenerico<bool>(false, "Somente administradores podem desativar usuários", false);
+
+            if (usuario is null)
+                return new ResultadoGenerico<bool>(false, "Usuário inválido", false);
+
+            if (!usuario.Ativo)
+                return new ResultadoGenerico<bool>(false, "Usuário já está desativado", false);
+
+            usuario.Desativar();
+
+            return new ResultadoGenerico<bool>(true, "Usuário desativado com sucesso", true);
+        }
+
+        public ResultadoGenerico<bool> AtivarUsuario(Usuario usuario)
+        {
+            if (!Administrador)
+                return new ResultadoGenerico<bool>(false, "Somente administradores podem Ativar usuários", false);
+
+            if (usuario is null)
+                return new ResultadoGenerico<bool>(false, "Usuário inválido", false);
+
+            if (usuario.Ativo)
+                return new ResultadoGenerico<bool>(false, "Usuário já está ativo", false);
+
+            usuario.Ativar();
+
+            return new ResultadoGenerico<bool>(true, "Usuário ativado com sucesso", true);
+        }
 
         public static ResultadoGenerico<Usuario> Criar(string nome, string email, string senha, long? id)
         {
@@ -106,9 +175,12 @@ namespace Agenda.Dominio.Entidades
             return new ResultadoGenerico<bool>(true, "Endereco adicionado com sucesso", true);
         }
 
-        public ResultadoGenerico<bool> AdicionarServico(string nome, string descricao, decimal valor)
+        public ResultadoGenerico<bool> AdicionarServico(string nome, string descricao, decimal valor, Endereco endereco)
         {
-            var servicoResult = Servico.Criar(nome,descricao,valor,this);
+            if (!endereco.Ativo)
+                return new ResultadoGenerico<bool>(false, "O endereço para este serviço esta desativado", false);
+
+            var servicoResult = Servico.Criar(nome,descricao,valor,this, endereco);
 
             if (!servicoResult.Sucesso)
                 return new ResultadoGenerico<bool>(false, servicoResult.Mensagem, false);
@@ -118,34 +190,87 @@ namespace Agenda.Dominio.Entidades
             _servicos.Add(servicoObj);
 
             return new ResultadoGenerico<bool>(true, "Serviço adicionado com sucesso", true);
-        }
+        }        
 
-        public ResultadoGenerico<bool> DeterminarDisponibilidade(DateTime data, TimeSpan horaInicio, TimeSpan horaFim, Servico servico)
-        {
-            if (servico.IdUsuario != Id)
-                return new ResultadoGenerico<bool>(false, "O serviço nao pertence ao usuario", true);
-
-            var disponibilidadeResult = Disponibilidade.Criar(data, horaInicio, horaFim, servico);
-
-            if(!disponibilidadeResult.Sucesso)
-                return new ResultadoGenerico<bool>(false, disponibilidadeResult.Mensagem, false);
-
-            return new ResultadoGenerico<bool>(true, "Disponibilidade determinada com sucesso", true);
-        }
-
-        public ResultadoGenerico<bool> AgendarServico(Disponibilidade disponibilidade) 
+        public ResultadoGenerico<bool> RealizarAgendamento(Disponibilidade disponibilidade) 
         {
             if(_servicos.Contains(disponibilidade.Servico))
                 return new ResultadoGenerico<bool>(false, "O Usuario nao pode agendar seus proprios servicos", false);
+
+            var dataHoraInicio = disponibilidade.Data.Date + disponibilidade.HoraInicio;
+            if (dataHoraInicio <= DateTime.Now)
+                return new ResultadoGenerico<bool>(false, "Essa disponibilidade já expirou", false);
+
+            bool jaAgendado = _agendamentos.Any(a => a.Disponibilidade.Id == disponibilidade.Id);
+            if (jaAgendado)
+                return new ResultadoGenerico<bool>(false, "Você já agendou esse horário", false);
 
             var agendamentoResult = Agendamento.Criar(disponibilidade, this);
 
             if(!agendamentoResult.Sucesso)
                 return new ResultadoGenerico<bool>(false, agendamentoResult.Mensagem, false);
 
-            return new ResultadoGenerico<bool>(true, "Disponibilidade determinada com sucesso", true);
+            var agendamento = agendamentoResult.Dados;
+
+            disponibilidade.Servico.Usuario.AdicionarAgendamentoInterno(agendamento);
+
+            return new ResultadoGenerico<bool>(true, "Agendamento realizado sucesso", true);
         }
 
+        public ResultadoGenerico<bool> AtivarEndereco(long idEndereco)
+        {
+            var endereco = _enderecos.FirstOrDefault(e => e.Id == idEndereco);
+
+            if (endereco is null)
+                return new ResultadoGenerico<bool>(false, "Endereço não encontrado", false);
+
+            if (endereco.Ativo)
+                return new ResultadoGenerico<bool>(false, "Endereço já está ativo", false);
+
+            endereco.Ativar();
+
+            return new ResultadoGenerico<bool>(true, "Endereço ativado com sucesso", true);
+        }
+
+        public ResultadoGenerico<bool> DesativarEndereco(long idEndereco)
+        {
+            var endereco = _enderecos.FirstOrDefault(e => e.Id == idEndereco);
+
+            if (endereco is null)
+                return new ResultadoGenerico<bool>(false, "Endereço não encontrado", false);
+
+            if (!endereco.Ativo)
+                return new ResultadoGenerico<bool>(false, "Endereço já está desativado", false);
+
+            
+            bool enderecoVinculadoAServico = _servicos.Any(s => s.IdEndereco == idEndereco);
+
+            if (enderecoVinculadoAServico)
+                return new ResultadoGenerico<bool>(false, "Não é possível desativar o endereço pois está vinculado a um ou mais serviços", false);
+
+            endereco.Desativar();
+
+            return new ResultadoGenerico<bool>(true, "Endereço desativado com sucesso", true);
+        }
+
+        public ResultadoGenerico<bool> AceitarAgendamento(long idAgendamento) 
+        {
+            var agendamento = _agendamentos.FirstOrDefault(a => a.Id == idAgendamento);
+
+            if (agendamento is null)
+                return new ResultadoGenerico<bool>(false, "Agendamento não encontrado", false);
+            
+            //if (agendamento.Disponibilidade?.Servico?.IdUsuario != Id)
+            //    return new ResultadoGenerico<bool>(false, "Usuario não tem permissão para aceitar este agendamento", false);
+
+            if (agendamento.Aceito)
+                return new ResultadoGenerico<bool>(false, "Este agendamento já foi aceito anteriormente", false);
+
+            agendamento.AceitarAgendamento();
+
+            return new ResultadoGenerico<bool>(true, "Agendamento aceito com sucesso", true);
+
+        }
         #endregion
     }
 }
