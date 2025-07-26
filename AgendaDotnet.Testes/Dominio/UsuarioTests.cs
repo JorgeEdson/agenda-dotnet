@@ -217,7 +217,7 @@ namespace AgendaDotnet.Testes.Dominio
         }
 
         [Fact]
-        public void AlterarSenha_ComNovaSenhaInvalida_DeveRetornarSucessoNaOperacaoMasAdicionarNotificacaoNoUsuario()
+        public void AlterarSenha_ComNovaSenhaInvalida_DeveRetornarFalha()
         {
             // Arrange
             string senhaInicial = "Senha123";
@@ -229,11 +229,11 @@ namespace AgendaDotnet.Testes.Dominio
             var resultado = usuario.AlterarSenha(senhaInicial, novaSenhaInvalida, confirmacaoSenha);
 
             // Assert
-            Assert.True(resultado.Sucesso); // A operação de AlterarSenha em si teve sucesso
-            Assert.True(resultado.Dados);
-            Assert.Equal("Senha alterada com sucesso", resultado.Mensagem);
-            Assert.Equal(novaSenhaInvalida, usuario.Senha);
-            Assert.False(usuario.Valido); // Mas a senha definida no usuário é inválida
+            Assert.False(resultado.Sucesso);
+            Assert.False(resultado.Dados);
+            Assert.Equal("Erro: Senha deve ter no mínimo 6 caracteres e conter ao menos um número", resultado.Mensagem);
+            Assert.Equal(senhaInicial, usuario.Senha); 
+            Assert.False(usuario.Valido); 
             Assert.Contains("Senha deve ter no mínimo 6 caracteres e conter ao menos um número", usuario.Notificacoes);
         }
 

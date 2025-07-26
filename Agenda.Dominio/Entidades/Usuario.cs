@@ -19,7 +19,7 @@ namespace Agenda.Dominio.Entidades
         #endregion
 
         #region metodos privados
-        private void SetSenha(string senha)
+        private bool SetSenha(string senha)
         {
             if (string.IsNullOrWhiteSpace(senha) ||
                 senha.Trim().Length < 6 ||
@@ -27,10 +27,11 @@ namespace Agenda.Dominio.Entidades
                 !senha.Any(char.IsLetter))
             {
                 AdicionarNotificacao("Senha deve ter no mínimo 6 caracteres e conter ao menos um número");
-                return;
+                return false;
             }
 
             Senha = senha;
+            return true;
         }
 
         private void Ativar() => Ativo = true;
@@ -110,7 +111,8 @@ namespace Agenda.Dominio.Entidades
             if (novaSenha != confirmacaoSenha)
                 return new ResultadoGenerico<bool>(false, "Confirmação de senha não confere", false);
 
-            SetSenha(novaSenha);
+            if(!SetSenha(novaSenha))
+                return new ResultadoGenerico<bool>(false, "Erro: "+ObterMensagemDeErros(), false);
 
             return new ResultadoGenerico<bool>(true, "Senha alterada com sucesso", true);
         }
